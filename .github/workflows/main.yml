@@ -7,7 +7,7 @@ jobs:
     name: build and deploy lambda
     strategy:
       matrix:
-        node-version: [16.x]
+        node-version: [12.x]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
@@ -36,3 +36,5 @@ jobs:
           zip_file: function.zip
           memory_size: 128
           timeout: 10
+          handler: index.handler
+          runtime: nodejs12.x
