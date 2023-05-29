@@ -4,15 +4,14 @@ const sharp = require('sharp');
 // get reference to S3 client
 const s3 = new AWS.S3();
 
-const COLD_BUCKET = process.env.COLD_BUCKET;
-const RESIZED_BUCKET = process.env.RESIZED_BUCKET;
-const ALLOWED_DIMENSIONS = new Set();
+// const RESIZED_BUCKET = process.env.RESIZED_BUCKET;
+// const ALLOWED_DIMENSIONS = new Set();
 
-// Allowed dimensions format: "wxh,16x16,28x28"
-if (process.env.ALLOWED_DIMENSIONS) {
-    const dimensions = process.env.ALLOWED_DIMENSIONS.split(",");
-    dimensions.forEach((dimension) => ALLOWED_DIMENSIONS.add(dimension));
-}
+// // Allowed dimensions format: "wxh,16x16,28x28"
+// if (process.env.ALLOWED_DIMENSIONS) {
+//     const dimensions = process.env.ALLOWED_DIMENSIONS.split(",");
+//     dimensions.forEach((dimension) => ALLOWED_DIMENSIONS.add(dimension));
+// }
 
 function getExtension (fileName) {
   const split = fileName.split(".");
@@ -66,11 +65,12 @@ async function handleResize(fileName, key, dimensions, coldBucket, resizedBucket
 
 
 exports.handler = async (event) => {
+  console.log("event handler ", event);
     const fileName = event.pathParameters?.file;
     const size = event.queryStringParameters?.size;
 
     if (!fileName) throw Error("No file name provided");
-    if (!size) return await handleNoSize(fileName, COLD_BUCKET, s3);
+    if (!size) return await handleNoSize(fileName, RESIZED_BUCKET, s3);
 
     if (ALLOWED_DIMENSIONS.size > 0 && !ALLOWED_DIMENSIONS.has(size)) return { statusCode: 403, headers: {}, body: "" };
 
@@ -81,6 +81,6 @@ exports.handler = async (event) => {
     } catch {
         const split = size.split("x");
 
-        return await handleResize(fileName, resizedKey, { width: parseInt(split[0]), height: parseInt(split[1]) }, COLD_BUCKET, RESIZED_BUCKET, s3);
+        return await handleResize(fileName, resizedKey, { width: parseInt(split[0]), height: parseInt(split[1]) }, RESIZED_BUCKET, RESIZED_BUCKET, s3);
     }
 };
