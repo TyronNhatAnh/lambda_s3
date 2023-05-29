@@ -10,13 +10,7 @@ const ALLOWED_DIMENSIONS = new Set();
 // Allowed dimensions format: "wxh,16x16,28x28"
 if (process.env.ALLOWED_DIMENSIONS) {
   const dimensions = process.env.ALLOWED_DIMENSIONS.split(",");
-
-  console.log("dimensions image Handler ", dimensions);
-
   dimensions.forEach(dimension => ALLOWED_DIMENSIONS.add(dimension));
-
-  console.log("ALLOWED_DIMENSIONS image Handler ", ALLOWED_DIMENSIONS);
-
 }
 
 function getExtension(fileName) {
@@ -51,8 +45,6 @@ async function handleResized(key, resizedBucket, s3) {
     const uploaded = await s3
     .getObject({Bucket: resizedBucket, Key: "thumbnail/" + key})
     .promise();
-
-    console.log("image body handler", uploaded.Body?.toString("base64"));
 
     return {
       statusCode: 200,
@@ -92,13 +84,10 @@ async function handleResize(
       Body: image,
       ContentType: "image"
     };
-    console.log(`Bucket push object: ${destparams.Bucket}`);
     console.log(`Key push object: ${destparams.Key}`);
                   
     await s3.putObject(destparams).promise();     
     
-    console.log("iamge handler body", image.toString("base64"));
-       
   return {
     statusCode: 200,
     headers: {
@@ -117,23 +106,14 @@ async function handleResize(
 
 exports.handler = async event => {
   try{
-    console.log("event handler ", event);
-
-    console.log("event handler Bucket", RESIZED_BUCKET);
-
     const fileName = event.pathParameters?.file;
     const size = event.queryStringParameters?.size;
-
-    console.log("fileName image Handler ", fileName);
-    console.log("size image Handler ", size);
 
     if (!fileName) throw Error("No file name provided");
     if (!size) {
       console.log("image Handler: handleNoSize");
       return await handleNoSize(fileName, RESIZED_BUCKET, s3);
     }
-
-    console.log("image Handler: ALLOWED_DIMENSIONS", ALLOWED_DIMENSIONS);
 
     if (ALLOWED_DIMENSIONS.size > 0 && !ALLOWED_DIMENSIONS.has(size)) {
       console.log("DIMENSIONS Not Existed: ", size);
