@@ -114,46 +114,49 @@ async function handleResize(
 }
 
 exports.handler = async event => {
-try{
-  console.log("event handler ", event);
+  try{
+    console.log("event handler ", event);
 
-  console.log("event handler Bucket", RESIZED_BUCKET);
+    console.log("event handler Bucket", RESIZED_BUCKET);
 
-  const fileName = event.pathParameters?.file;
-  const size = event.queryStringParameters?.size;
+    const fileName = event.pathParameters?.file;
+    const size = event.queryStringParameters?.size;
 
-  console.log("fileName image Handler ", fileName);
-  console.log("size image Handler ", size);
+    console.log("fileName image Handler ", fileName);
+    console.log("size image Handler ", size);
 
-  if (!fileName) throw Error("No file name provided");
-  if (!size) {
-  console.log("image Handler: handleNoSize");
-  return await handleNoSize(fileName, RESIZED_BUCKET, s3);
+    if (!fileName) throw Error("No file name provided");
+    if (!size) {
+      console.log("image Handler: handleNoSize");
+      return await handleNoSize(fileName, RESIZED_BUCKET, s3);
+    }
+
+    console.log("image Handler: handleNoSize", JSON.stringify(ALLOWED_DIMENSIONS));
+
+    if (ALLOWED_DIMENSIONS.size > 0 && !ALLOWED_DIMENSIONS.has(size)) {
+      console.log("DIMENSIONS Not Existed: ", size);
+      return {statusCode: 403, headers: {}, body: ""};
+    }
+
+    const resizedKey = size + "." + fileName;
+
+    try {
+      console.log("image Handler: handleResized");
+      return await handleResized(resizedKey, RESIZED_BUCKET, s3);
+    } catch {
+      const split = size.split("x");
+      console.log("image Handler: handleResize");
+      return await handleResize(
+          fileName,
+          resizedKey,
+          {width: parseInt(split[0]), height: parseInt(split[1])},
+          RESIZED_BUCKET,
+          RESIZED_BUCKET,
+          s3,
+        );
+    }
+  } catch (error) {
+    console.log(error);
+    return;
   }
-
-  if (ALLOWED_DIMENSIONS.size > 0 && !ALLOWED_DIMENSIONS.has(size))
-    return {statusCode: 403, headers: {}, body: ""};
-
-  const resizedKey = size + "." + fileName;
-
-  try {
-  console.log("image Handler: handleResized");
-  return await handleResized(resizedKey, RESIZED_BUCKET, s3);
-  } catch {
-    const split = size.split("x");
-
-  console.log("image Handler: handleResize");
-  return await handleResize(
-      fileName,
-      resizedKey,
-      {width: parseInt(split[0]), height: parseInt(split[1])},
-      RESIZED_BUCKET,
-      RESIZED_BUCKET,
-      s3,
-    );
-  }
-} catch (error) {
-  console.log(error);
-  return;
-}
 };
