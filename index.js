@@ -19,8 +19,8 @@ function getExtension(fileName) {
 }
 
 async function handleNoSize(fileName, coldBucket, s3) {
-  const fileExtension = getExtension(fileName);
   try {
+    const fileExtension = getExtension(fileName);
     const uploaded = await s3
     .getObject({Bucket: coldBucket, Key: fileName})
     .promise();
@@ -41,25 +41,26 @@ async function handleNoSize(fileName, coldBucket, s3) {
 }
 
 async function handleResized(key, resizedBucket, s3) {
-  const fileExtension = getExtension(key);
-
   try {
+    const fileExtension = getExtension(key);
     const uploaded = await s3
     .getObject({Bucket: resizedBucket, Key: "thumbnail/" + key})
     .promise();
+
+    console.log("image body handler", uploaded.Body?.toString("base64"));
+
+    return {
+      statusCode: 200,
+      headers: {
+        "Content-Type": "application/" + fileExtension,
+        "Content-Disposition": `attachment; filename=${"thumbnail/" + key}`,
+      },
+      body: uploaded.Body?.toString("base64") || "",
+      isBase64Encoded: true,
+    };
   } catch (error) {
     console.log(error);
   }
-
-  return {
-    statusCode: 200,
-    headers: {
-      "Content-Type": "application/" + fileExtension,
-      "Content-Disposition": `attachment; filename=${"thumbnail/" + key}`,
-    },
-    body: uploaded.Body?.toString("base64") || "",
-    isBase64Encoded: true,
-  };
 }
 
 async function handleResize(
@@ -70,7 +71,10 @@ async function handleResize(
   resizedBucket,
   s3,
 ) {
-  const fileExtension = getExtension(fileName);
+  
+// Upload the thumbnail image to the destination bucket
+  try {
+    const fileExtension = getExtension(fileName);
 
   const uploaded = await s3
     .getObject({Bucket: coldBucket, Key: fileName})
@@ -80,8 +84,6 @@ async function handleResize(
     .resize(dimensions.width, dimensions.height)
     .toBuffer();
 
-// Upload the thumbnail image to the destination bucket
-  try {
     const destparams = {
       Bucket: resizedBucket,
       Key: "thumbnail/" + key,
@@ -91,12 +93,10 @@ async function handleResize(
     console.log(`Bucket push object: ${destparams.Bucket}`);
     console.log(`Key push object: ${destparams.Key}`);
                   
-    await s3.putObject(destparams).promise();          
-  } catch (error) {
-    console.log(error);
-    return;
-  }
+    await s3.putObject(destparams).promise();     
     
+    console.log("iamge handler body", image.toString("base64"));
+       
   return {
     statusCode: 200,
     headers: {
@@ -106,6 +106,11 @@ async function handleResize(
     body: image.toString("base64"),
     isBase64Encoded: true,
   };
+  } catch (error) {
+    console.log(error);
+    return;
+  }
+ 
 }
 
 exports.handler = async event => {
