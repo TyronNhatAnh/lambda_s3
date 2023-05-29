@@ -45,7 +45,7 @@ async function handleResized(key, resizedBucket, s3) {
 
   try {
     const uploaded = await s3
-    .getObject({Bucket: resizedBucket, Key: key})
+    .getObject({Bucket: resizedBucket, Key: "thumbnail/" + key})
     .promise();
   } catch (error) {
     console.log(error);
@@ -55,7 +55,7 @@ async function handleResized(key, resizedBucket, s3) {
     statusCode: 200,
     headers: {
       "Content-Type": "application/" + fileExtension,
-      "Content-Disposition": `attachment; filename=${key}`,
+      "Content-Disposition": `attachment; filename=${"thumbnail/" + key}`,
     },
     body: uploaded.Body?.toString("base64") || "",
     isBase64Encoded: true,
