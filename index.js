@@ -90,8 +90,14 @@ exports.handler = async event => {
   const fileName = event.pathParameters?.file;
   const size = event.queryStringParameters?.size;
 
+  console.log("fileName image Handler ", fileName);
+  console.log("size image Handler ", size);
+
   if (!fileName) throw Error("No file name provided");
-  if (!size) return await handleNoSize(fileName, RESIZED_BUCKET, s3);
+  if (!size) {
+  console.log("image Handler: handleNoSize");
+  return await handleNoSize(fileName, RESIZED_BUCKET, s3);
+  }
 
   if (ALLOWED_DIMENSIONS.size > 0 && !ALLOWED_DIMENSIONS.has(size))
     return {statusCode: 403, headers: {}, body: ""};
@@ -99,11 +105,13 @@ exports.handler = async event => {
   const resizedKey = size + "." + fileName;
 
   try {
-    return await handleResized(resizedKey, RESIZED_BUCKET, s3);
+  console.log("image Handler: handleResized");
+  return await handleResized(resizedKey, RESIZED_BUCKET, s3);
   } catch {
     const split = size.split("x");
 
-    return await handleResize(
+  console.log("image Handler: handleResize");
+  return await handleResize(
       fileName,
       resizedKey,
       {width: parseInt(split[0]), height: parseInt(split[1])},
