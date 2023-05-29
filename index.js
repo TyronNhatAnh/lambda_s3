@@ -20,8 +20,8 @@ function getExtension(fileName) {
 
 async function handleNoSize(fileName, coldBucket, s3) {
   const fileExtension = getExtension(fileName);
-
-  const uploaded = await s3
+  try {
+    const uploaded = await s3
     .getObject({Bucket: coldBucket, Key: fileName})
     .promise();
 
@@ -34,14 +34,22 @@ async function handleNoSize(fileName, coldBucket, s3) {
     body: uploaded.Body?.toString("base64") || "",
     isBase64Encoded: true,
   };
+  } catch (error) {
+    console.log(error);
+  }
+  
 }
 
 async function handleResized(key, resizedBucket, s3) {
   const fileExtension = getExtension(key);
 
-  const uploaded = await s3
+  try {
+    const uploaded = await s3
     .getObject({Bucket: resizedBucket, Key: key})
     .promise();
+  } catch (error) {
+    console.log(error);
+  }
 
   return {
     statusCode: 200,
@@ -72,13 +80,28 @@ async function handleResize(
     .resize(dimensions.width, dimensions.height)
     .toBuffer();
 
-  await s3.upload({Body: image, Bucket: resizedBucket, Key: key}).promise();
-
+// Upload the thumbnail image to the destination bucket
+  try {
+    const destparams = {
+      Bucket: resizedBucket,
+      Key: "thumbnail/" + key,
+      Body: image,
+      ContentType: "image"
+    };
+    console.log(`Bucket push object: ${destparams.Bucket}`);
+    console.log(`Key push object: ${destparams.Key}`);
+                  
+    await s3.putObject(destparams).promise();          
+  } catch (error) {
+    console.log(error);
+    return;
+  }
+    
   return {
     statusCode: 200,
     headers: {
       "Content-Type": "application/" + fileExtension,
-      "Content-Disposition": `attachment; filename=${key}`,
+      "Content-Disposition": `attachment; filename=${"thumbnail/" + key}`,
     },
     body: image.toString("base64"),
     isBase64Encoded: true,
@@ -86,7 +109,11 @@ async function handleResize(
 }
 
 exports.handler = async event => {
+try{
   console.log("event handler ", event);
+
+  console.log("event handler Bucket", RESIZED_BUCKET);
+
   const fileName = event.pathParameters?.file;
   const size = event.queryStringParameters?.size;
 
@@ -120,4 +147,8 @@ exports.handler = async event => {
       s3,
     );
   }
+} catch (error) {
+  console.log(error);
+  return;
+}
 };
