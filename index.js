@@ -10,7 +10,13 @@ const ALLOWED_DIMENSIONS = new Set();
 // Allowed dimensions format: "wxh,16x16,28x28"
 if (process.env.ALLOWED_DIMENSIONS) {
   const dimensions = process.env.ALLOWED_DIMENSIONS.split(",");
+
+  console.log("dimensions image Handler ", dimensions);
+
   dimensions.forEach(dimension => ALLOWED_DIMENSIONS.add(dimension));
+
+  console.log("ALLOWED_DIMENSIONS image Handler ", ALLOWED_DIMENSIONS);
+
 }
 
 function getExtension(fileName) {
@@ -131,7 +137,7 @@ exports.handler = async event => {
       return await handleNoSize(fileName, RESIZED_BUCKET, s3);
     }
 
-    console.log("image Handler: handleNoSize", JSON.stringify(ALLOWED_DIMENSIONS));
+    console.log("image Handler: ALLOWED_DIMENSIONS", ALLOWED_DIMENSIONS);
 
     if (ALLOWED_DIMENSIONS.size > 0 && !ALLOWED_DIMENSIONS.has(size)) {
       console.log("DIMENSIONS Not Existed: ", size);
