@@ -47,7 +47,6 @@ async function handleNoSize(fileName, coldBucket, s3) {
 }
 
 async function handleResized(key, resizedBucket, s3) {
-  try {
     const fileExtension = getExtension(key);
     const uploaded = await s3
     .getObject({Bucket: resizedBucket, Key: "thumbnail/" + key})
@@ -64,9 +63,6 @@ async function handleResized(key, resizedBucket, s3) {
       body: uploaded.Body?.toString("base64") || "",
       isBase64Encoded: true,
     };
-  } catch (error) {
-    console.log(error);
-  }
 }
 
 async function handleResize(
@@ -144,7 +140,7 @@ exports.handler = async event => {
       return {statusCode: 403, headers: {}, body: ""};
     }
 
-    const resizedKey = size + "." + fileName;
+    const resizedKey = size + "/" + fileName;
 
     try {
       console.log("image Handler: handleResized");
