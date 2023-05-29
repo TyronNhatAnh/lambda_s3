@@ -1,79 +1,86 @@
-// dependencies
 const AWS = require('aws-sdk');
-const util = require('util');
 const sharp = require('sharp');
                 
 // get reference to S3 client
 const s3 = new AWS.S3();
-                
-exports.handler = async (event, context, callback) => {
-                
-// Read options from the event parameter.
-console.log("Reading options from event:\n", util.inspect(event, {depth: 5}));
-const srcBucket = event.Records[0].s3.bucket.name;
-// Object key may have spaces or unicode non-ASCII characters.
-const srcKey    = decodeURIComponent(event.Records[0].s3.object.key.replace(/\+/g, " "));
-const dstBucket = srcBucket;
-const dstKey    = "thumbnail/" + srcKey;
-                
-// Infer the image type from the file suffix.
-const typeMatch = srcKey.match(/\.([^.]*)$/);
-if (!typeMatch) {
-  console.log("Could not determine the image type.");
-  return;
+
+const COLD_BUCKET = process.env.COLD_BUCKET;
+const RESIZED_BUCKET = process.env.RESIZED_BUCKET;
+const ALLOWED_DIMENSIONS = new Set();
+
+// Allowed dimensions format: "wxh,16x16,28x28"
+if (process.env.ALLOWED_DIMENSIONS) {
+    const dimensions = process.env.ALLOWED_DIMENSIONS.split(",");
+    dimensions.forEach((dimension) => ALLOWED_DIMENSIONS.add(dimension));
 }
-                
-// Check that the image type is supported
-const imageType = typeMatch[1].toLowerCase();
-if (imageType != "jpg" && imageType != "png") {
-  console.log(`Unsupported image type: ${imageType}`);
-  return;
-}
-                
-// Download the image from the S3 source bucket.
-                
-try {
-  const params = {
-    Bucket: srcBucket,
-    Key: srcKey
+
+function getExtension (fileName) {
+  const split = fileName.split(".");
+  return split[split.length - 1];
+};
+
+async function handleNoSize(fileName, coldBucket, s3) {
+  const fileExtension = getExtension(fileName);
+
+  const uploaded = await s3.getObject({ Bucket: coldBucket, Key: fileName }).promise();
+
+  return {
+      statusCode: 200,
+      headers: { "Content-Type": "application/" + fileExtension, "Content-Disposition": `attachment; filename=${fileName}` },
+      body: uploaded.Body?.toString("base64") || "",
+      isBase64Encoded: true,
   };
-  var origimage = await s3.getObject(params).promise();
-                
-} catch (error) {
-  console.log(error);
-  return;
-}
-                
-// set thumbnail width. Resize will set the height automatically to maintain aspect ratio.
-const width  = 200;
-                
-// Use the sharp module to resize the image and save in a buffer.
-try {
-  var buffer = await sharp(origimage.Body).resize(width).toBuffer();
-                
-} catch (error) {
-  console.log(error);
-  return;
-}
-                
-// Upload the thumbnail image to the destination bucket
-try {
-  const destparams = {
-    Bucket: dstBucket,
-    Key: dstKey,
-    Body: buffer,
-    ContentType: "image"
+};
+
+async function handleResized(key, resizedBucket, s3) {
+  const fileExtension = getExtension(key);
+
+  const uploaded = await s3.getObject({ Bucket: resizedBucket, Key: key }).promise();
+
+  return {
+      statusCode: 200,
+      headers: { "Content-Type": "application/" + fileExtension, "Content-Disposition": `attachment; filename=${key}` },
+      body: uploaded.Body?.toString("base64") || "",
+      isBase64Encoded: true,
   };
-  console.log(`Bucket push object: ${destparams.Bucket}`);
-  console.log(`Key push object: ${destparams.Key}`);
-                
-  const putResult = await s3.putObject(destparams).promise();
-                
-  } catch (error) {
-    console.log(error);
-    return;
-  }
-                
-  console.log('Successfully resized ' + srcBucket + '/' + srcKey +
-    ' and uploaded to ' + dstBucket + '/' + dstKey);
+};
+
+async function handleResize(fileName, key, dimensions, coldBucket, resizedBucket, s3) {
+  const fileExtension = getExtension(fileName);
+
+  const uploaded = await s3.getObject({ Bucket: coldBucket, Key: fileName }).promise();
+
+  const image = await sharp(uploaded.Body)
+      .resize(dimensions.width, dimensions.height)
+      .toBuffer();
+
+  await s3.upload({ Body: image, Bucket: resizedBucket, Key: key }).promise();
+
+  return {
+      statusCode: 200,
+      headers: { "Content-Type": "application/" + fileExtension, "Content-Disposition": `attachment; filename=${key}` },
+      body: image.toString("base64"),
+      isBase64Encoded: true,
   };
+};
+
+
+exports.handler = async (event) => {
+    const fileName = event.pathParameters?.file;
+    const size = event.queryStringParameters?.size;
+
+    if (!fileName) throw Error("No file name provided");
+    if (!size) return await handleNoSize(fileName, COLD_BUCKET, s3);
+
+    if (ALLOWED_DIMENSIONS.size > 0 && !ALLOWED_DIMENSIONS.has(size)) return { statusCode: 403, headers: {}, body: "" };
+
+    const resizedKey = size + "." + fileName;
+
+    try {
+        return await handleResized(resizedKey, RESIZED_BUCKET, s3);
+    } catch {
+        const split = size.split("x");
+
+        return await handleResize(fileName, resizedKey, { width: parseInt(split[0]), height: parseInt(split[1]) }, COLD_BUCKET, RESIZED_BUCKET, s3);
+    }
+};
