@@ -106,7 +106,7 @@ async function handleResize(
 
 exports.handler = async event => {
   try{
-    const fileName = event.pathParameters?.file;
+    let fileName = event.pathParameters?.file;
     const size = event.queryStringParameters?.size;
 
     console.log("ImageHandler FileName: ", fileName);
@@ -114,7 +114,7 @@ exports.handler = async event => {
     if (!fileName) throw Error("No file name provided");
 
     fileName = decodeURI(fileName);
-    
+
     console.log("ImageHandler DecodeULI FileName: ", );
 
     if (!size) {
