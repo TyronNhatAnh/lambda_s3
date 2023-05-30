@@ -109,6 +109,8 @@ exports.handler = async event => {
     const fileName = event.pathParameters?.file;
     const size = event.queryStringParameters?.size;
 
+    console.log("ImageHandler FileName: ", fileName);
+
     if (!fileName) throw Error("No file name provided");
     if (!size) {
       console.log("image Handler: handleNoSize");
