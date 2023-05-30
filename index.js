@@ -112,6 +112,11 @@ exports.handler = async event => {
     console.log("ImageHandler FileName: ", fileName);
 
     if (!fileName) throw Error("No file name provided");
+
+    fileName = decodeURI(fileName);
+    
+    console.log("ImageHandler DecodeULI FileName: ", );
+
     if (!size) {
       console.log("image Handler: handleNoSize");
       return await handleNoSize(fileName, RESIZED_BUCKET, s3);
