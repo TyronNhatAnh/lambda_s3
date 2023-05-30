@@ -35,8 +35,8 @@ async function handleNoSize(fileName, coldBucket, s3) {
   return {
     statusCode: 200,
     headers: {
-      "Content-Type": "application/" + fileExtension,
-      "Content-Disposition": `attachment; filename=${fileName}`,
+        "Content-Type": uploaded?.ContentType,
+      // "Content-Disposition": `attachment; filename=${fileName}`,
     },
     body: uploaded.Body?.toString("base64") || "",
     isBase64Encoded: true,
@@ -56,8 +56,8 @@ async function handleResized(key, resizedBucket, s3) {
     return {
       statusCode: 200,
       headers: {
-        "Content-Type": "application/" + fileExtension,
-        "Content-Disposition": `attachment; filename=${"thumbnail/" + key}`,
+        "Content-Type": uploaded?.ContentType,
+        // "Content-Disposition": `attachment; filename=${"thumbnail/" + key}`,
       },
       body: uploaded.Body?.toString("base64") || "",
       isBase64Encoded: true,
@@ -98,8 +98,8 @@ async function handleResize(
   return {
     statusCode: 200,
     headers: {
-      "Content-Type": "application/" + fileExtension,
-      "Content-Disposition": `attachment; filename=${"thumbnail/" + key}`,
+      "Content-Type": uploaded?.ContentType,
+      // "Content-Disposition": `attachment; filename=${"thumbnail/" + key}`,
     },
     body: image.toString("base64"),
     isBase64Encoded: true,
