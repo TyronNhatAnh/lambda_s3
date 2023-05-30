@@ -101,11 +101,12 @@ async function handleResize(
     console.log(error);
     return;
   }
- 
 }
 
 exports.handler = async event => {
   try{
+    console.log("ImageHandler event: ", event);
+
     let fileName = event.pathParameters?.file;
     const size = event.queryStringParameters?.size;
 
