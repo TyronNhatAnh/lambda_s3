@@ -17,6 +17,7 @@ const ALLOWED_DIMENSIONS = new Set();
 if (process.env.ALLOWED_DIMENSIONS) {
   const dimensions = process.env.ALLOWED_DIMENSIONS.split(",");
   dimensions.forEach(dimension => ALLOWED_DIMENSIONS.add(dimension));
+
 }
 
 function getExtension(fileName) {
@@ -157,6 +158,7 @@ exports.handler = async event => {
 
     if (ALLOWED_DIMENSIONS.size > 0 && !ALLOWED_DIMENSIONS.has(size)) {
       console.log("DIMENSIONS Not Existed: ", size);
+      console.log("DIMENSIONS Current: ", ALLOWED_DIMENSIONS);
       return {statusCode: 403, headers: {}, body: ""};
     }
 
