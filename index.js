@@ -128,20 +128,27 @@ exports.handler = async event => {
       console.log("CURRENT_ENV Not Existed");
       return {statusCode: 403, headers: {}, body: ""};
     }
-    let CURRENT_RESIZED_BUCKET = DEV_RESIZED_BUCKET
+    let CURRENT_RESIZED_BUCKET = ""
     switch (CURRENT_ENV) {
+      case DEV_ENV:
+        CURRENT_RESIZED_BUCKET = DEV_RESIZED_BUCKET
+        break;
       case STAG_ENV:
         CURRENT_RESIZED_BUCKET = STAG_RESIZED_BUCKET
         break;
       case PROD_ENV:
         CURRENT_RESIZED_BUCKET = PROD_RESIZED_BUCKET
         break;
-    
       default:
         break;
     }
 
     console.log("ImageHandler CURRENT_RESIZED_BUCKET: ", CURRENT_RESIZED_BUCKET);
+
+    if (!CURRENT_RESIZED_BUCKET) {
+      console.log("image Handler: No Bucket");
+      return {statusCode: 403, headers: {}, body: ""};
+    }
 
     if (!size) {
       console.log("image Handler: handleNoSize");
