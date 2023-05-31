@@ -29,8 +29,8 @@ jobs:
       - name: default deploy
         uses: appleboy/lambda-action@v0.1.9
         with:
-          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID_NEW }}
-          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY_NEW }}
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws_region: ap-northeast-2
           function_name: resizeimage
           zip_file: function.zip
